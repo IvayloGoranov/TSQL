@@ -264,3 +264,14 @@ DELETE FROM Projects;
 ROLLBACK TRAN
 
 ---------------------------------------------------------------------
+
+SELECT e.* 
+  FROM [dbo].[Employees] AS e
+  JOIN 
+	  (SELECT e.DepartmentID, MAX(e.Salary) AS MaxSalary
+		 FROM [dbo].[Employees] AS e
+		GROUP BY e.DepartmentID) AS MaxSalaries
+	ON e.DepartmentID = MaxSalaries.DepartmentID
+   AND e.Salary = MaxSalaries.MaxSalary
+
+---------------------------------------------------------------------

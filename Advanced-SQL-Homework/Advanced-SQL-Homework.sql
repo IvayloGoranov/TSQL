@@ -188,3 +188,32 @@ SELECT CountryName,
 FROM Countries
 ORDER BY CountryName
 ---------------------------------------------------------------------
+SELECT CountryName, IsoCode
+FROM Countries
+WHERE CountryName LIKE '%a%a%a%'
+ORDER BY IsoCode
+---------------------------------------------------------------------
+SELECT CountryName, IsoCode
+FROM Countries
+WHERE CountryName LIKE '%a%a%a%'
+ORDER BY IsoCode
+---------------------------------------------------------------------
+SELECT DepositGroup 
+FROM (SELECT DepositGroup, AVG(MagicWandSize) AS AverageMagicWandSize
+      FROM [dbo].[WizzardDeposits]
+      GROUP BY DepositGroup) as avgm
+      WHERE AverageMagicWandSize = 
+			(SELECT MIN(AverageMagicWandSize) MinAverageMagicWandSize 
+			 FROM (SELECT DepositGroup, AVG(MagicWandSize) AS AverageMagicWandSize
+				   FROM [dbo].[WizzardDeposits]
+				   GROUP BY DepositGroup) AS av)
+				   
+---------------------------------------------------------------------
+SELECT DISTINCT sal.DepartmentId, sal.Salary 
+FROM (SELECT e.DepartmentId, 
+			 e.Salary, 
+			 DENSE_RANK() 
+			 OVER (PARTITION BY e.DepartmentID 
+			 ORDER BY e.Salary DESC) AS SalaryRank
+      FROM [dbo].[Employees] AS e) AS sal
+      WHERE sal.SalaryRank = 3
