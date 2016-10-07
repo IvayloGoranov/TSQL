@@ -275,3 +275,28 @@ SELECT e.*
    AND e.Salary = MaxSalaries.MaxSalary
 
 ---------------------------------------------------------------------
+
+SELECT MAX(AverageSalary) AS MaxAverageSalary
+   FROM 
+(SELECT e.DepartmentID, AVG(e.Salary) AS AverageSalary
+   FROM [dbo].[Employees] AS e
+  GROUP BY e.DepartmentID) AS av
+
+---------------------------------------------------------------------
+
+WITH av AS(
+ SELECT e.DepartmentID, AVG(e.Salary) AS AverageSalary
+   FROM [dbo].[Employees] AS e
+  GROUP BY e.DepartmentID
+), 
+avn AS(
+SELECT * 
+  FROM av
+ WHERE av.DepartmentID IS NOT NULL
+)
+SELECT * FROM avn
+
+---------------------------------------------------------------------
+
+CREATE NONCLUSTERED INDEX IX_Employees_FirstName_Salary
+    ON Employees(FirstName,Salary)

@@ -192,3 +192,61 @@ LEFT OUTER JOIN Rivers r
 ON cr.RiverId = r.Id
 WHERE con.ContinentName = 'Africa'
 ORDER BY c.CountryName
+
+---------------------------------------------------------------------
+/*Filter all the projects of employee with id 24. 
+If the project has started before 2005 the return value should be NULL
+*/
+
+SELECT e.EmployeeId, e.FirstName, 
+	   p.Name
+FROM Employees AS e
+INNER JOIN EmployeesProjects AS ep
+ON e.EmployeeId = ep.EmployeeId
+LEFT JOIN Projects AS p
+ON ep.ProjectId = p.ProjectId
+AND YEAR(p.StartDate) < 2005
+WHERE e.EmployeeId = 24
+
+---------------------------------------------------------------------
+
+/*For each country, find the name and elevation of the highest peak, 
+along with its mountain. When no peaks are available in some country, 
+display elevation 0, "(no highest peak)" as peak name and "(no mountain)" 
+as mountain name. When multiple peaks in some country have the same elevation, 
+display all of them. Sort the results by country name alphabetically, 
+then by highest peak name alphabetically. 
+Submit for evaluation the result grid with headers. Limit only the first 5 rows
+*/
+
+SELECT TOP 5 * FROM(
+SELECT c.CountryName, p.PeakName, p.Elevation, m.MountainRange 
+ FROM [dbo].[Countries] AS c
+INNER JOIN [dbo].[MountainsCountries] AS mc
+   ON c.CountryCode = mc.CountryCode
+INNER JOIN [dbo].[Mountains] AS m
+   ON mc.MountainId = m.Id
+INNER JOIN [dbo].[Peaks] AS p
+   ON p.MountainId = m.Id
+INNER JOIN (
+SELECT c.CountryName, MAX(p.Elevation) AS MaxElevation
+ FROM [dbo].[Countries] AS c
+INNER JOIN [dbo].[MountainsCountries] AS mc
+   ON c.CountryCode = mc.CountryCode
+INNER JOIN [dbo].[Mountains] AS m
+   ON mc.MountainId = m.Id
+INNER JOIN [dbo].[Peaks] AS p
+   ON p.MountainId = m.Id
+GROUP BY c.CountryName
+) AS max_elevation
+ ON max_elevation.MaxElevation = p.Elevation
+AND max_elevation.CountryName = c.CountryName
+UNION ALL
+SELECT c.CountryName, '(no highest peak)' AS PeakName,
+       0 AS Elevation, '(no mountain)' AS MountainRange
+ FROM [dbo].[Countries] AS c
+ LEFT JOIN [dbo].[MountainsCountries] AS mc
+    ON c.CountryCode = mc.CountryCode
+ WHERE mc.MountainId  IS NULL
+ ) AS results
+ ORDER BY CountryName, PeakName
