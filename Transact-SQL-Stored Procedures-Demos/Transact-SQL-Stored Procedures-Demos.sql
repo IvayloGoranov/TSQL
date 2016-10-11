@@ -370,3 +370,89 @@ DEALLOCATE empCursor
 
 
 ---------------------------------------------------------------------
+
+CREATE PROCEDURE usp_Loop
+AS
+BEGIN
+	DECLARE @startValue INT = 0
+	DECLARE @maxValue INT = 10
+	WHILE(@startValue < @maxValue)
+	BEGIN
+		PRINT @startValue
+		SET @startValue = @startValue + 1
+	END
+END
+GO
+
+---------------------------------------------------------------------
+
+BEGIN TRY
+	SELECT 0/0 --always throws exception
+END TRY
+BEGIN CATCH
+	PRINT 'Error'
+END CATCH
+
+---------------------------------------------------------------------
+
+SELECT * FROM [dbo].[EmployeesProjects]
+
+ALTER TRIGGER tr_LogRecords
+ON [dbo].[EmployeesProjects]
+INSTEAD OF DELETE
+AS
+BEGIN
+	IF OBJECT_ID('[EmployeesProjectsHistory]') IS NULL
+	BEGIN
+		CREATE TABLE EmployeesProjectsHistory(
+			EmployeeId INT,
+			ProjectId INT
+			)
+	END
+
+    INSERT INTO [EmployeesProjectsHistory](EmployeeId,ProjectId)
+	SELECT d.EmployeeID, d.ProjectID FROM deleted AS d
+END
+
+
+DELETE FROM [EmployeesProjects]
+WHERE EmployeeID = 8
+
+SELECT * FROM [EmployeesProjects]
+
+---------------------------------------------------------------------
+
+SELECT * FROM [dbo].[EmployeesProjects]
+
+CREATE PROCEDURE udp_AssignProject (@EmployeeID INT, @ProjectID INT)
+AS
+BEGIN 
+	DECLARE @maxProjects INT
+	DECLARE @currentProjects INT
+	SET @maxProjects = 3
+	SET @currentProjects = (SELECT COUNT(*) AS ProjectsCount
+							  FROM [dbo].[EmployeesProjects] AS p
+							 WHERE p.EmployeeID = @EmployeeID)
+	
+
+
+	BEGIN TRAN 
+
+	INSERT INTO [dbo].[EmployeesProjects](EmployeeID, ProjectID)
+	VALUES (@EmployeeID, @ProjectID)
+
+	IF(@currentProjects >= @maxProjects)
+	BEGIN 
+		RAISERROR('Too many projects', 16, 1)
+		ROLLBACK
+	END
+	ELSE
+	BEGIN
+		COMMIT
+	END
+END
+
+
+SELECT * FROM [dbo].[EmployeesProjects]
+
+EXEC dbo.udp_AssignProject 263, 6
