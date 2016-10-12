@@ -456,3 +456,109 @@ END
 SELECT * FROM [dbo].[EmployeesProjects]
 
 EXEC dbo.udp_AssignProject 263, 6
+
+---------------------------------------------------------------------
+/*
+Define a function ufn_IsWordComprised(@setOfLetters, @word) that returns true or false depending 
+on that if the word is a comprised of the given set of letters. 
+*/
+
+CREATE FUNCTION ufn_IsWordComprised(@setOfLetters nvarchar(MAX), @word nvarchar(MAX))  
+RETURNS char
+AS
+BEGIN
+  DECLARE @setOfLettersResults int
+  DECLARE @currentLetter varchar
+  DECLARE @currentLetterPosition int
+  DECLARE @wordLength int
+
+  SET @currentLetterPosition = 1
+  SET @wordLength = LEN(@word)
+  
+  WHILE @currentLetterPosition <= @wordLength
+  BEGIN
+	SET @currentLetter = SUBSTRING(@word, @currentLetterPosition, 1)
+	SET @setOfLettersResults =  CHARINDEX(@currentLetter, @setOfLetters, 1)
+	IF(@setOfLettersResults = 0)
+	BEGIN
+		RETURN 0
+		BREAK
+	END
+
+	SET @currentLetterPosition = @currentLetterPosition + 1
+  END
+
+  RETURN 1
+END
+
+---------------------------------------------------------------------
+
+CREATE TRIGGER tr_BuyItems 
+ON UserGameItems
+INSTEAD OF INSERT
+AS
+BEGIN
+	DECLARE @itemLevel int
+	DECLARE @userGameLevel int
+	DECLARE @itemID int
+	DECLARE @userGameID int
+
+	DECLARE insertCursor CURSOR
+	FOR
+	SELECT ItemID, UserGameID
+	FROM inserted
+
+	OPEN insertCursor
+
+	FETCH NEXT FROM insertCursor 
+	INTO @itemId, @userGameID
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		SET @itemLevel = (SELECT MinLevel
+						  FROM Items
+						  WHERE Id = @itemID)
+		SET @itemLevel = (SELECT [Level]
+						  FROM UserGames
+						  WHERE Id = @userGameID)
+		IF(@itemLevel > @userGameLevel)
+		BEGIN
+			RAISEERROR('Inavlid item ID', 16, 1)
+		END
+		ELSE
+		BEGIN
+			INSERT INTO UserGames(ItemID, UserGameID)
+			VALUES(@itemId, @userGameId)
+		END
+
+		FETCH NEXT FROM insertCursor 
+		INTO @itemId, @userGameID
+	END
+
+	CLOSE insertCursor
+	DEALLOCATE insertCursor
+
+	UPDATE UserGames
+	SET Cash = Cash + 50000
+	FROM UserGames ug
+	INNER JOIN Users u
+	ON u.Id = ug.UserId
+	INNER JOIN Games g
+	ON g.Id = ug.GameID
+	WHERE u.Username IN ('baleremuda', 'loosenoise', 'inguinalself', 
+						 'buildingdeltoid', 'monoxidecos' )
+		  AND g.Name = 'Bali'
+
+    INSERT INTO UserGameItems
+	SELECT ug.ID 
+	FROM UserGames ug
+	INNER JOIN Users u
+	ON u.Id = ug.UserId
+	INNER JOIN Games g
+	CROSS JOIN Items i
+	ON g.Id = ug.GameID
+	WHERE u.Username IN ('baleremuda', 'loosenoise', 'inguinalself', 
+						 'buildingdeltoid', 'monoxidecos' )
+		  AND g.Name = 'Bali'
+		  AND (i.ItemTypeId BETWEEN 251 AND 299 OR i.ItemTypeId BETWEEN 501 AND 539)
+END
